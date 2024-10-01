@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ROS2BTC Lotto</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .header {
+            background-color: #333;
+            color: #fff;
+            padding: 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+        }
+        .container {
+            width: 50%;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        h1 {
+            color: #ffffff;
+        }
+        label, input {
+            margin: 10px 0;
+            padding: 10px;
+            font-size: 16px;
+        }
+        input[type="number"] {
+            width: 100%;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin-top: 20px;
+            cursor: pointer;
+        }
+        .result {
+            margin-top: 20px;
+            text-align: left;
+            font-size: 1.2em;
+        }
+        .result p {
+            margin: 10px 0;
+            color: #555;
+        }
+        .result strong {
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>ROS2BTC Lotto</h1>
+        <p>Guess 5 numbers between 1 and 9 correctly to win your share of the prize pool!</p>
+    </div>
+
+    <div class="container">
+        <h1>Lotto Entry</h1>
+        <label for="amount">Enter ticket amount ($):</label>
+        <input type="number" id="amount" placeholder="Ticket Amount" />
+        <br><br>
+        <label>Enter 5 numbers (1-9):</label><br>
+        <input type="number" id="number1" min="1" max="9" placeholder="Number 1" required />
+        <input type="number" id="number2" min="1" max="9" placeholder="Number 2" required />
+        <input type="number" id="number3" min="1" max="9" placeholder="Number 3" required />
+        <input type="number" id="number4" min="1" max="9" placeholder="Number 4" required />
+        <input type="number" id="number5" min="1" max="9" placeholder="Number 5" required />
+        <br><br>
+        <button onclick="playLotto()">Play Lotto</button>
+
+        <div class="result" id="result"></div>
+    </div>
+
+    <script>
+        function randomize(N) {
+            return Math.floor(Math.random() * N) + 1;
+        }
+
+        function generateRandomPlayerNumbers() {
+            let playerNumbers = [];
+            for (let i = 0; i < 5; i++) {
+                playerNumbers.push(randomize(9));  // Random numbers between 1 and 9
+            }
+            return playerNumbers;
+        }
+
+        function playLotto() {
+            let amount = parseFloat(document.getElementById('amount').value);
+            let poolPrize = 0;
+            let resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = "";  // Clear previous results
+
+            // User entry
+            let userNumbers = [
+                parseInt(document.getElementById('number1').value),
+                parseInt(document.getElementById('number2').value),
+                parseInt(document.getElementById('number3').value),
+                parseInt(document.getElementById('number4').value),
+                parseInt(document.getElementById('number5').value)
+            ];
+
+            // Validate user input
+            if (userNumbers.some(num => num < 1 || num > 9)) {
+                alert("Please enter valid numbers between 1 and 9.");
+                return;
+            }
+
+            // Add user's entry to pool prize
+            poolPrize += amount;
+
+            // Generate random winning numbers
+            let winningNumbers = [];
+            for (let i = 0; i < 5; i++) {
+                winningNumbers.push(randomize(9));
+            }
+
+            // Simulate 99 other players
+            let players = [userNumbers];  // Add user as the first player
+            let matchingNumbersCount = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0};
+
+            for (let i = 0; i < 99; i++) {
+                let playerNumbers = generateRandomPlayerNumbers();
+                players.push(playerNumbers);
+
+                // Calculate matches for each simulated player
+                let matches = playerNumbers.filter(num => winningNumbers.includes(num)).length;
+                matchingNumbersCount[matches]++;
+                poolPrize += amount;
+            }
+
+            // Add user's match count to the results
+            let userMatches = userNumbers.filter(num => winningNumbers.includes(num)).length;
+            matchingNumbersCount[userMatches]++;
+
+            // Calculate taker's fee
+            let takersFee = poolPrize * 0.05;
+
+            // Calculate prize distribution
+            let prizeDistribution = {
+                5: poolPrize * 0.5,
+                4: poolPrize * 0.2,
+                3: poolPrize * 0.125,
+                2: poolPrize * 0.075,
+                1: poolPrize * 0.05,
+                0: 0
+            };
+
+            // Display Results
+            resultDiv.innerHTML += `<p><strong>Winning Numbers:</strong> ${winningNumbers.join(", ")}</p>`;
+            resultDiv.innerHTML += `<p><strong>Total Prize Pool:</strong> $${poolPrize.toFixed(2)}</p>`;
+            resultDiv.innerHTML += `<p><strong>Taker's Fee:</strong> $${takersFee.toFixed(2)}</p>`;
+            resultDiv.innerHTML += `<p><strong>Total Players:</strong> 100 (including you)</p>`;
+
+            // Display the prize breakdown for each category
+            for (let i = 5; i >= 0; i--) {
+                let numPlayersInCategory = matchingNumbersCount[i];
+                let prizeForCategory = prizeDistribution[i];
+                let individualPrize = numPlayersInCategory > 0 ? prizeForCategory / numPlayersInCategory : 0;
+
+                resultDiv.innerHTML += `<p><br><strong>${i} Matches:</strong> ${numPlayersInCategory} players`;
+                resultDiv.innerHTML += `Total Prize for this Category: $${prizeForCategory.toFixed(2)}`;
+                resultDiv.innerHTML += `<br>Each player wins: $${individualPrize.toFixed(2)}</p>`;
+            }
+
+            // Special note for the user's entry
+            resultDiv.innerHTML += `<p><br><strong>Your Numbers:</strong> ${userNumbers.join(", ")}</p>`;
+            resultDiv.innerHTML += `<p><strong>Your Matches:</strong> ${userMatches}</p>`;
+            let userPrize = userMatches > 0 ? prizeDistribution[userMatches] / matchingNumbersCount[userMatches] : 0;
+            resultDiv.innerHTML += `<p><strong>Your Prize:</strong> $${userPrize.toFixed(2)}</p>`;
+        }
+    </script>
+
+</body>
+</html>
